@@ -1,4 +1,5 @@
 /*
+EDITOR: Christopher Ritz
   MPU6050 Raw
 
   A code for obtaining raw data from the MPU6050 module with the option to
