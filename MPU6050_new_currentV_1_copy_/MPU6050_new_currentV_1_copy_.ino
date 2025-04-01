@@ -7,7 +7,7 @@
   Find the full MPU6050 library documentation here:
   https://github.com/ElectronicCats/mpu6050/wiki
 */
-#include <Wire.h>
+#include<Wire.h>
 #include "I2Cdev.h"    // Include I2C communication library
 #include "MPU6050.h"   // Include MPU6050 sensor library
 
@@ -39,7 +39,7 @@ void setup() {
     Fastwire::setup(400, true);    // Initialize fast I2C communication at 400kHz
   #endif
 
-  Serial.begin(38400);    // Start serial communication at 38400 baud rate
+  Serial.begin(9600);    // Start serial communication at 9600 baud rate
 
   /*Initialize device and check connection*/ 
   Serial.println("Initializing MPU...");    // Print initialization message
@@ -82,8 +82,8 @@ void setup() {
 
 void loop() {
   /* Read raw accel/gyro data from the module. Other methods commented*/
-  mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);    // Get all 6 axes of motion data
-  //mpu.getAcceleration(&ax, &ay, &az);    // Alternative: Get only acceleration data (commented)
+  //mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);    // Get all 6 axes of motion data (commented)
+  mpu.getAcceleration(&ax, &ay, &az);    // Alternative: Get only acceleration data
   //mpu.getRotation(&gx, &gy, &gz);        // Alternative: Get only rotation data (commented)
 
   /*Print the obtained data on the defined format*/
@@ -91,10 +91,11 @@ void loop() {
     Serial.print("a/g:\t");           // Print label and tab
     Serial.print(ax); Serial.print("\t");    // Print X-axis acceleration
     Serial.print(ay); Serial.print("\t");    // Print Y-axis acceleration
-    Serial.print(az); Serial.print("\t");    // Print Z-axis acceleration
-    Serial.print(gx); Serial.print("\t");    // Print X-axis gyroscope
+    Serial.println(az); Serial.print("\t");    // Print Z-axis acceleration
+   /* Serial.print(gx); Serial.print("\t");    // Print X-axis gyroscope
     Serial.print(gy); Serial.print("\t");    // Print Y-axis gyroscope
     Serial.println(gz);                      // Print Z-axis gyroscope with newline
+    */
   #endif
 
   #ifdef OUTPUT_BINARY_ACCELGYRO    // If binary format is defined
