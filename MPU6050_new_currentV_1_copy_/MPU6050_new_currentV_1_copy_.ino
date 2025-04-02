@@ -82,7 +82,7 @@ void setup() {
   Serial.print("\n");        // Print newline
 
   /*Configure board LED pin for output*/ 
-  pinMode(LED_BUILTIN, OUTPUT);    // Set built-in LED pin as output
+  pinMode(LED_BUILTIN, OUTPUT);    // Set built-in LED pin as output (COMMENT OUT FOR FINAL IMPLEMENTATION)
 }
 
 void loop() {
@@ -113,6 +113,6 @@ void loop() {
   #endif
 
   /*Blink LED to indicate activity*/
-  blinkState = !blinkState;           // Toggle blink state
-  digitalWrite(LED_BUILTIN, blinkState);    // Update LED state
+  blinkState = !blinkState;           // Toggle blink state //comment out for final
+  digitalWrite(LED_BUILTIN, blinkState);    // Update LED state //comment out for final
 }
