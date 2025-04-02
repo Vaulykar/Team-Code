@@ -1,0 +1,42 @@
+// Define pin connections
+const int batteryPin = A0;  // Analog pin to read battery voltage
+const int redPin = 9;       // Red LED pin (PWM)
+const int greenPin = 10;    // Green LED pin (PWM)
+const int bluePin = 11;     // Blue LED pin (not used in this case)
+
+// Voltage reference and divider
+const float referenceVoltage = 5.0;  // Arduino operating voltage
+
+void setup() {
+    pinMode(redPin, OUTPUT);
+    pinMode(greenPin, OUTPUT);
+    pinMode(bluePin, OUTPUT);
+    Serial.begin(9600);  // Initialize serial communication
+}
+
+void loop() {
+    int rawValue = analogRead(batteryPin); // Read the analog input
+    float batteryVoltage = (rawValue / 1023.0) * referenceVoltage; // Convert to voltage
+
+    Serial.print("Battery Voltage: ");
+    Serial.println(batteryVoltage);
+
+   
+
+    // Change LED color based on voltage level
+    if (batteryVoltage >= 4.0) {
+        analogWrite(redPin, 0);   // Red off
+        analogWrite(greenPin, 255); // Green on
+    } else if(batteryVoltage > 3.5 && batteryVoltage < 4.0 ){
+        analogWrite(redPin, 170);
+        analogWrite(greenPin, 85);
+
+    } else{
+        analogWrite(redPin, 255);
+        analogWrite(greenPin, 0);
+
+    }
+
+    analogWrite(bluePin, 0); // Blue remains off
+    delay(500); // Small delay to avoid rapid fluctuations
+}
