@@ -33,6 +33,9 @@ int16_t ax, ay, az;    // Variables to store accelerometer readings (X, Y, Z axe
 int16_t gx, gy, gz;    // Variables to store gyroscope readings (X, Y, Z axes)
 bool blinkState;       // Variable to control LED blinking state
 
+bool motionDet; // Variable for evaluating motion detection
+int16_t valDelta; // Variable for calculating difference in acc. Values
+
 void setup() {
   /*--Start I2C interface--*/
   #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE    // Check which I2C implementation is used
