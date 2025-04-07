@@ -1,4 +1,5 @@
 /*
+EDITOR (NOT OWNER OR AFFILIATED): Christopher Ritz
   IMU Zero
 
   Calibrates the MPU6050 to compensate for measurement deviations or errors that may
