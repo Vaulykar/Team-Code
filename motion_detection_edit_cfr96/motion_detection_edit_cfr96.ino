@@ -5,11 +5,13 @@
 
 Adafruit_MPU6050 mpu;
 
-
+//used for set and rep incrementing logic
+int repCount = 0;
+bool motionDet = 0;
 
 void setup(void) {
   // Initialize baud rate
-  Serial.begin(115200);
+  Serial.begin(9600);
   while (!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
 
@@ -43,6 +45,10 @@ void loop() {
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
 
+    if (a.acceleration.x>0 && a.acceleration.y>0 && a.acceleration.z>0){
+    motionDet =1;
+    }
+
     /* Print out the values */
     Serial.print("AccelX:");
     Serial.print(a.acceleration.x);
@@ -63,6 +69,5 @@ void loop() {
     Serial.print(g.gyro.z);
     Serial.println("");
   }
-
   delay(10);
 }
