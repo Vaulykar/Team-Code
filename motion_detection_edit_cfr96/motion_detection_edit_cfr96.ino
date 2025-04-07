@@ -7,6 +7,10 @@ Adafruit_MPU6050 mpu;
 
 //used for set and rep incrementing logic
 int rep = 0, motionDet = 0;
+// stores the time of the last interrupt
+unsigned long lastInterruptTime = 0;
+// define a time threshold (in ms)
+const unsigned long TIME_THRESHOLD = 10000; // 10000 = 10s
 
 void setup(void) {
   // Initialize baud rate
@@ -68,10 +72,22 @@ void loop() {
     Serial.print("GyroZ:");
     Serial.print(g.gyro.z);
     Serial.println("");
+
     motionDet ++;
     if (motionDet == 2){
-      rep++;
+      rep ++;
     motionDet = 0;
+    }
+     // get current time
+    unsigned long currentTime = millis();
+    // calculate time since last interrupt
+    unsigned long timeSinceLastInterrupt = currentTime - lastInterruptTime;
+    
+    // only proceed if enough time has passed since last interrupt
+    if (timeSinceLastInterrupt >= TIME_THRESHOLD) {
+      // update the last interrupt time
+      lastInterruptTime = currentTime;
+
     }
     Serial.print("Reps Performed: ");
     Serial.print(rep);
