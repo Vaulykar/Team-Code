@@ -1,10 +1,14 @@
+//Edited by Christopher Ritz for Design Project (Rep Tracker)
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
 Adafruit_MPU6050 mpu;
 
+
+
 void setup(void) {
+  // Initialize baud rate
   Serial.begin(115200);
   while (!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
@@ -20,7 +24,7 @@ void setup(void) {
   }
   Serial.println("MPU6050 Found!");
 
-  //setupt motion detection
+  //setup motion detection
   mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
   mpu.setMotionDetectionThreshold(1);
   mpu.setMotionDetectionDuration(20);
