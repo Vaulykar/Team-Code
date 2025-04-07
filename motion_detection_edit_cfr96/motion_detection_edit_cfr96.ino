@@ -6,8 +6,7 @@
 Adafruit_MPU6050 mpu;
 
 //used for set and rep incrementing logic
-int repCount = 0;
-bool motionDet = 0;
+int rep = 0, motionDet = 0;
 
 void setup(void) {
   // Initialize baud rate
@@ -28,7 +27,7 @@ void setup(void) {
 
   //setup motion detection
   mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
-  mpu.setMotionDetectionThreshold(1);
+  mpu.setMotionDetectionThreshold(8);
   mpu.setMotionDetectionDuration(20);
   mpu.setInterruptPinLatch(true);	// Keep it latched.  Will turn off when reinitialized.
   mpu.setInterruptPinPolarity(true);
@@ -45,9 +44,10 @@ void loop() {
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
 
-    if (a.acceleration.x>0 && a.acceleration.y>0 && a.acceleration.z>0){
-    motionDet =1;
+    /*if (a.acceleration.x>0 && a.acceleration.y>0 && a.acceleration.z>0){
+    repCount ++;
     }
+    */
 
     /* Print out the values */
     Serial.print("AccelX:");
@@ -67,6 +67,14 @@ void loop() {
     Serial.print(",");
     Serial.print("GyroZ:");
     Serial.print(g.gyro.z);
+    Serial.println("");
+    motionDet ++;
+    if (motionDet == 2){
+      rep++;
+    motionDet = 0;
+    }
+    Serial.print("Reps Performed: ");
+    Serial.print(rep);
     Serial.println("");
   }
   delay(10);
