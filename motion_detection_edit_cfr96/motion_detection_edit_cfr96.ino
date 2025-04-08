@@ -6,11 +6,12 @@
 Adafruit_MPU6050 mpu;
 
 //used for set and rep incrementing logic
-int rep = 0, motionDet = 0, set = 0;
+int rep = 0, set = 0, motionDet = 0;
+
 // stores the time of the last interrupt
 unsigned long lastInterruptTime = 0;
 // define a time threshold (in ms)
-const unsigned long TIME_THRESHOLD_REP = 2000; // 500 = 0.5
+//const unsigned long TIME_THRESHOLD_REP = 2000; // 500 = 0.5
 const unsigned long TIME_THRESHOLD_SET = 5000;
 
 void setup(void) {
@@ -32,8 +33,8 @@ void setup(void) {
 
   //setup motion detection
   mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
-  mpu.setMotionDetectionThreshold(4);
-  mpu.setMotionDetectionDuration(500);
+  mpu.setMotionDetectionThreshold(1);
+  mpu.setMotionDetectionDuration(200);
   mpu.setInterruptPinLatch(true);	// Keep it latched.  Will turn off when reinitialized.
   mpu.setInterruptPinPolarity(true);
   mpu.setMotionInterrupt(true);
@@ -48,6 +49,9 @@ void setup(void) {
 
 void loop() {
 
+    sensors_event_t a, g, temp;
+    mpu.getEvent(&a, &g, &temp);
+
    // get current time
    currentTime = millis();
     // calculate time since last interrupt
@@ -58,18 +62,20 @@ void loop() {
     }
 
   if(mpu.getMotionInterruptStatus()) {
-         // Calculate time since last interrupt
+    /* Get new sensor events with the readings */
+    // Calculate time since last interrupt
     timeSinceLastInterrupt = currentTime - lastInterruptTime;
     
     // Condition: only proceed if enough time has passed since last interrupt
-    if (timeSinceLastInterrupt >= TIME_THRESHOLD_REP) 
+    if ( ((a.acceleration.z<=-5.0) || (a.acceleration.z>=11.0))) // NOTE: In final code, we need to use the x and y rather than z axis (or just the y axis)
     {
-      // Update the last interrupt time
+      motionDet++;
+      if (motionDet == 1)
+      { rep++;
+        motionDet = 0;
+      }
+
       lastInterruptTime = currentTime;
-    rep++;
-    /* Get new sensor events with the readings */
-    sensors_event_t a, g, temp;
-    mpu.getEvent(&a, &g, &temp);
 
     /*if (a.acceleration.x>0 && a.acceleration.y>0 && a.acceleration.z>0){
     repCount ++;
