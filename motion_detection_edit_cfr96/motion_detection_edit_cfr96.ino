@@ -6,11 +6,12 @@
 Adafruit_MPU6050 mpu;
 
 //used for set and rep incrementing logic
-int rep = 0, motionDet = 0;
+int rep = 0, motionDet = 0, set = 0;
 // stores the time of the last interrupt
 unsigned long lastInterruptTime = 0;
 // define a time threshold (in ms)
-const unsigned long TIME_THRESHOLD = 10000; // 10000 = 10s
+const unsigned long TIME_THRESHOLD_REP = 2000; // 500 = 0.5
+const unsigned long TIME_THRESHOLD_SET = 5000;
 
 void setup(void) {
   // Initialize baud rate
@@ -31,8 +32,8 @@ void setup(void) {
 
   //setup motion detection
   mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
-  mpu.setMotionDetectionThreshold(8);
-  mpu.setMotionDetectionDuration(20);
+  mpu.setMotionDetectionThreshold(4);
+  mpu.setMotionDetectionDuration(500);
   mpu.setInterruptPinLatch(true);	// Keep it latched.  Will turn off when reinitialized.
   mpu.setInterruptPinPolarity(true);
   mpu.setMotionInterrupt(true);
@@ -41,9 +42,31 @@ void setup(void) {
   delay(100);
 }
 
+
+    unsigned long currentTime;
+    unsigned long timeSinceLastInterrupt;
+
 void loop() {
 
+   // get current time
+   currentTime = millis();
+    // calculate time since last interrupt
+  if ((currentTime - lastInterruptTime) >= TIME_THRESHOLD_SET && rep != 0)
+    {
+      set++;
+      rep = 0;
+    }
+
   if(mpu.getMotionInterruptStatus()) {
+         // Calculate time since last interrupt
+    timeSinceLastInterrupt = currentTime - lastInterruptTime;
+    
+    // Condition: only proceed if enough time has passed since last interrupt
+    if (timeSinceLastInterrupt >= TIME_THRESHOLD_REP) 
+    {
+      // Update the last interrupt time
+      lastInterruptTime = currentTime;
+    rep++;
     /* Get new sensor events with the readings */
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
@@ -73,25 +96,30 @@ void loop() {
     Serial.print(g.gyro.z);
     Serial.println("");
 
-    motionDet ++;
+    /* motionDet ++;
     if (motionDet == 2){
       rep ++;
     motionDet = 0;
     }
-     // get current time
-    unsigned long currentTime = millis();
-    // calculate time since last interrupt
-    unsigned long timeSinceLastInterrupt = currentTime - lastInterruptTime;
-    
-    // only proceed if enough time has passed since last interrupt
-    if (timeSinceLastInterrupt >= TIME_THRESHOLD) {
+    */
+   
+
+     // only proceed if enough time has passed since last interrupt (FOR SETS COUNTED LOGIC)
+    /*if (timeSinceLastInterrupt >= TIME_THRESHOLD_SET) {
       // update the last interrupt time
       lastInterruptTime = currentTime;
-
     }
+    */
+    
     Serial.print("Reps Performed: ");
     Serial.print(rep);
     Serial.println("");
+
+    Serial.print("Sets Performed: ");
+    Serial.print(set);
+    Serial.println("");
+
   }
   delay(10);
+  }
 }
