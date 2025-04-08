@@ -115,8 +115,8 @@ void loop() {
     Serial.print(rep);
     Serial.println("");
 
-    Serial.print("Sets Performed: ");
-    Serial.print(set);
+    Serial.print("Current Set: ");
+    Serial.print(set+1);
     Serial.println("");
 
   }
