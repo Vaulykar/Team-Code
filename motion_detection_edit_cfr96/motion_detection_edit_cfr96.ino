@@ -7,12 +7,14 @@ Adafruit_MPU6050 mpu;
 
 //used for set and rep incrementing logic
 int rep = 0, set = 0, motionDet = 0;
+unsigned long slowRep = 0;
 
 // stores the time of the last interrupt
 unsigned long lastInterruptTime = 0;
 // define a time threshold (in ms)
-//const unsigned long TIME_THRESHOLD_REP = 2000; // 500 = 0.5
-const unsigned long TIME_THRESHOLD_SET = 5000;
+const unsigned long TIME_THRESHOLD_SET = 30000;
+const unsigned long TIME_THRESHOLD_REP_MIN = 2000
+//TIME_THRESHOLD_REP_MAX = 10000
 
 void setup(void) {
   // Initialize baud rate
@@ -43,7 +45,6 @@ void setup(void) {
   delay(100);
 }
 
-
     unsigned long currentTime;
     unsigned long timeSinceLastInterrupt;
 
@@ -59,23 +60,42 @@ void loop() {
     {
       set++;
       rep = 0;
+
+      //RTC Logic for message display INSERT HERE:
+
     }
 
   if(mpu.getMotionInterruptStatus()) {
     /* Get new sensor events with the readings */
     // Calculate time since last interrupt
+
+    timeDel = currentTime - lastTime;
+    lastTime = currentTime;
+
     timeSinceLastInterrupt = currentTime - lastInterruptTime;
     
+    if (timeDel<TIME_THRESHOLD_REP_MIN)
+    {
+      slowRep++
+    }
     // Condition: only proceed if enough time has passed since last interrupt
-    if ( ((a.acceleration.z<=-5.0) || (a.acceleration.z>=11.0))) // NOTE: In final code, we need to use the x and y rather than z axis (or just the y axis)
+
+    //if ( ((a.acceleration.z<=-5.0) || (a.acceleration.z>=11.0)) || ((timeSinceLastInterrupt<TIME_THRESHOLD_REP_MAX) && (timeSinceLastInterrupt> TIME_THRESHOLD_REP_MIN)) ) // NOTE: In final code, we need to use the x and y rather than z axis (or just the y axis)
+
+    if ( ((a.acceleration.z<=-5.0) || (a.acceleration.z>=11.0)) )// NOTE: In final code, we need to use the x and y rather than z axis (or just the y axis)
+    //|| (slowRep >= 20))
     {
       motionDet++;
       if (motionDet == 1)
-      { rep++;
+      { 
+        rep++;
         motionDet = 0;
+        slowRep = 0;
       }
-
+    
       lastInterruptTime = currentTime;
+
+      //Insert line 50-59 from RTC
 
     /*if (a.acceleration.x>0 && a.acceleration.y>0 && a.acceleration.z>0){
     repCount ++;
@@ -109,7 +129,6 @@ void loop() {
     }
     */
    
-
      // only proceed if enough time has passed since last interrupt (FOR SETS COUNTED LOGIC)
     /*if (timeSinceLastInterrupt >= TIME_THRESHOLD_SET) {
       // update the last interrupt time
@@ -126,6 +145,7 @@ void loop() {
     Serial.println("");
 
   }
+  //insert else logic from RTC lines 61-101
   delay(10);
   }
 }
