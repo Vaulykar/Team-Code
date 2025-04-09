@@ -37,7 +37,7 @@ void setup() {
 
 void loop() {
   // --- Placeholder for Accelerometer Data ---
-  // Your teammate should insert code here to set 'movementDetected' based on accel data
+  // should insert code here to set 'movementDetected' based on accel data
   // Example: Read accel values, calculate magnitude, and set movementDetected = true/false
   // For now, it’s a dummy value (false) to show the structure
   movementDetected = false; // Replace this with actual accel logic
