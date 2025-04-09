@@ -37,8 +37,8 @@ void setup() {
   lcd.setCursor(0, 0);
   lcd.print("Rep Counter");
   lcd.setCursor(0, 1);
-  lcd.print("Sets: 0"); // Initial set count display
-}
+  
+  }
 
 void loop() {
   // --- Placeholder for Accelerometer Data ---
@@ -57,8 +57,7 @@ void loop() {
     lcd.setCursor(0, 0);
     lcd.print("Working...");
     lcd.setCursor(0, 1);
-    lcd.print("Sets: ");
-    lcd.print(setCounter);
+    
   } else {
     // No movement detected
     if (!isResting) {
