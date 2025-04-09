@@ -96,17 +96,6 @@ void loop() {
         lcd.print("work!");
         delay(2000); // Show message for 2 seconds
         
-        // Increment set counter after rest period ends
-        setCounter++;
-        
-        // Update display with new set count
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Rest Over");
-        lcd.setCursor(0, 1);
-        lcd.print("Sets: ");
-        lcd.print(setCounter);
-        
         isResting = false; // Reset for next rest period
       }
     }
