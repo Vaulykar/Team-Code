@@ -2,6 +2,11 @@
 #include <RTClib.h>           // DS1307 RTC library
 #include <LiquidCrystal_I2C.h> // I2C LCD library
 
+//SDA: A4 (Analog pin 4 on Uno)
+//SCL: A5 (Analog pin 5 on Uno)
+//VCC: 5V
+//GND: GND
+
 // Initialize objects
 RTC_DS1307 rtc;
 LiquidCrystal_I2C lcd(0x27, 16, 2); // Adjust I2C address if needed
