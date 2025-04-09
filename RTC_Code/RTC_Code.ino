@@ -54,8 +54,7 @@ void updateTimer() {
 
         if (currentMillis - previousMillis >= 1000) {
             remainingSeconds--;
-            previousMillis = currentMillis - (currentMillis - previousMillis - 1000); (edited)
-[9:50 AM]
+            previousMillis = currentMillis - (currentMillis - previousMillis - 1000); 
 lcd.setCursor(0, 1);
             lcd.print("    "); // Clear previous time
             lcd.setCursor(0, 1);
