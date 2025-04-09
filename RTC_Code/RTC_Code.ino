@@ -1,101 +1,111 @@
-#include <LiquidCrystal.h>
-#include <RTClib.h>    // Adafruit RTClib library
-#include <SoftWire.h>  // Software I2C library
+#include <Wire.h>              // For I2C communication
+#include <RTClib.h>           // DS1307 RTC library
+#include <LiquidCrystal_I2C.h> // I2C LCD library
 
-// LCD on pins 0-5
-LiquidCrystal lcd(0, 1, 2, 3, 4, 5); // RS=0, EN=1, D4=2, D5=3, D6=4, D7=5
+// Initialize objects
+RTC_DS1307 rtc;
+LiquidCrystal_I2C lcd(0x27, 16, 2); // Adjust I2C address if needed
 
-// Software I2C for RTC on A2 (SDA) and A3 (SCL)
-SoftWire softI2c(A2, A3); // SDA=A2, SCL=A3
-RTC_DS1307 clock;         // RTC object from RTClib
-
-// Timer variables
-unsigned long previousMillis = 0;
-const long interval = 120000; // 2 minutes in milliseconds
-bool timerRunning = false;
-int remainingSeconds = 0;
-
-// Accelerometer variables
-const int motionPin = 8; // 8
-const int stillPin = 9; // 9
-bool movementDetected = false;
-//const int accelThreshold = 100; // Adjust based on your accelerometer (sensistivity is determined in acc code)
+// Variables
+unsigned long restStartTime = 0;
+bool isResting = false;
+const int REST_DURATION = 120; // 2 minutes in seconds
+bool movementDetected = false; // Placeholder for accelerometer input
+int setCounter = 0;            // Tracks completed sets
 
 void setup() {
-    // Configure Software I2C pins
-    softI2c.begin(); // Initialize Software I2C
+  Serial.begin(9600);
+  Wire.begin();
 
-    // Initialize RTC with Software I2C
-    if (!clock.begin(&softI2c)) { // Pass SoftWire object to RTClib
-        // If RTC fails to initialize, loop forever (for debugging)
-        while (1);
-    }
+  // Initialize RTC
+  if (!rtc.begin()) {
+    Serial.println("RTC not found!");
+    while (1);
+  }
+  if (!rtc.isrunning()) {
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Set RTC to compile time
+  }
 
-    lcd.begin(16, 2); // Initialize 16x2 LCD
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Rep Counter");
-    lcd.setCursor(0, 1);
-    lcd.print("Active");
-}
-
-void startTimer() {
-    timerRunning = true;
-    previousMillis = millis();
-    remainingSeconds = 120;
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Rest Timer:");
-}
-
-void updateTimer() {
-    if (timerRunning) {
-        unsigned long currentMillis = millis();
-
-        if (currentMillis - previousMillis >= 1000) {
-            remainingSeconds--;
-            previousMillis = currentMillis - (currentMillis - previousMillis - 1000); 
-lcd.setCursor(0, 1);
-            lcd.print("    "); // Clear previous time
-            lcd.setCursor(0, 1);
-            lcd.print(remainingSeconds / 60);
-            lcd.print(":");
-            if (remainingSeconds % 60 < 10) lcd.print("0");
-            lcd.print(remainingSeconds % 60);
-
-            if (remainingSeconds <= 0) {
-                timerRunning = false;
-                lcd.clear();
-                lcd.setCursor(0, 0);
-                lcd.print("Get back to");
-                lcd.setCursor(0, 1);
-                lcd.print("work!");
-            }
-        }
-    }
+  // Initialize LCD
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("Rep Counter");
+  lcd.setCursor(0, 1);
+  lcd.print("Sets: 0"); // Initial set count display
 }
 
 void loop() {
-    // Read accelerometer values
-    int accelX = analogRead(accelXPin); // A0
-    int accelY = analogRead(accelYPin); // A1
+  // --- Placeholder for Accelerometer Data ---
+  // Your teammate should insert code here to set 'movementDetected' based on accel data
+  // Example: Read accel values, calculate magnitude, and set movementDetected = true/false
+  // For now, it’s a dummy value (false) to show the structure
+  movementDetected = false; // Replace this with actual accel logic
 
-    // Detect movement
-    movementDetected = (abs(accelX - 512) > accelThreshold || abs(accelY - 512) > accelThreshold);
+  // --- End of Placeholder ---
 
-    if (movementDetected) {
-        if (timerRunning) {
-            timerRunning = false; // Reset timer if movement restarts
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("Rep Counter");
-            lcd.setCursor(0, 1);
-            lcd.print("Active");
-        }
-    } else {
-        if (!timerRunning) {
-            startTimer();
-        }
-        updateTimer();
+  // Check if there's movement
+  if (movementDetected) {
+    // Movement detected, reset rest state
+    isResting = false;
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Working...");
+    lcd.setCursor(0, 1);
+    lcd.print("Sets: ");
+    lcd.print(setCounter);
+  } else {
+    // No movement detected
+    if (!isResting) {
+      // Start rest timer
+      isResting = true;
+      DateTime now = rtc.now();
+      restStartTime = now.unixtime(); // Get current time in seconds
     }
+
+    // Calculate elapsed rest time
+    DateTime now = rtc.now();
+    unsigned long elapsedTime = now.unixtime() - restStartTime;
+
+    if (isResting) {
+      if (elapsedTime < REST_DURATION) {
+        // Display countdown
+        int remainingSeconds = REST_DURATION - elapsedTime;
+        int minutes = remainingSeconds / 60;
+        int seconds = remainingSeconds % 60;
+
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Rest Time:");
+        lcd.setCursor(0, 1);
+        lcd.print(minutes);
+        lcd.print(":");
+        if (seconds < 10) lcd.print("0"); // Add leading zero
+        lcd.print(seconds);
+      } else {
+        // Rest time is up
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Get back to");
+        lcd.setCursor(0, 1);
+        lcd.print("work!");
+        delay(2000); // Show message for 2 seconds
+        
+        // Increment set counter after rest period ends
+        setCounter++;
+        
+        // Update display with new set count
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Rest Over");
+        lcd.setCursor(0, 1);
+        lcd.print("Sets: ");
+        lcd.print(setCounter);
+        
+        isResting = false; // Reset for next rest period
+      }
+    }
+  }
+
+  delay(100); // Small delay to avoid overwhelming the loop
 }
