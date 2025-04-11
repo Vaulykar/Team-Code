@@ -1,6 +1,6 @@
 #include <Wire.h>              // For I2C communication
 #include <RTClib.h>           // DS1307 RTC library
-#include <LiquidCrystal_I2C.h> // I2C LCD library
+//#include <LiquidCrystal_I2C.h> // I2C LCD library
 
 //SDA: A4 (Analog pin 4 on Uno)
 //SCL: A5 (Analog pin 5 on Uno)
@@ -9,7 +9,7 @@
 
 // Initialize objects
 RTC_DS1307 rtc;
-LiquidCrystal_I2C lcd(0x27, 16, 2); // Adjust I2C address if needed
+//LiquidCrystal_I2C lcd(0x27, 16, 2); // Adjust I2C address if needed
 
 // Variables
 unsigned long restStartTime = 0;
@@ -30,13 +30,15 @@ void setup() {
   if (!rtc.isrunning()) {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Set RTC to compile time
   }
-
+/*
   // Initialize LCD
   lcd.init();
   lcd.backlight();
   lcd.setCursor(0, 0);
   lcd.print("Rep Counter");
   lcd.setCursor(0, 1);
+*/
+
   
   }
 
@@ -53,10 +55,13 @@ void loop() {
   if (movementDetected) {
     // Movement detected, reset rest state
     isResting = false;
+/*
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Working...");
     lcd.setCursor(0, 1);
+*/
+
     
   } else {
     // No movement detected
@@ -77,7 +82,7 @@ void loop() {
         int remainingSeconds = REST_DURATION - elapsedTime;
         int minutes = remainingSeconds / 60;
         int seconds = remainingSeconds % 60;
-
+/*
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Rest Time:");
@@ -94,6 +99,8 @@ void loop() {
         lcd.setCursor(0, 1);
         lcd.print("work!");
         delay(2000); // Show message for 2 seconds
+*/
+
         
         isResting = false; // Reset for next rest period
       }
