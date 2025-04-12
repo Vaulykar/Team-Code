@@ -9,7 +9,7 @@
 
 // Initialize objects
 RTC_DS1307 rtc;
-//LiquidCrystal_I2C lcd(0x27, 16, 2); // I2C address 0x27, 16x2 LCD
+//LiquidCrystal_I2C lcd(0x27, 16, 2); // Adjust I2C address if needed
 
 // Variables
 unsigned long restStartTime = 0;
