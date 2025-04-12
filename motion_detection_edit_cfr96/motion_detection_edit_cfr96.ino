@@ -82,7 +82,7 @@ void loop() {
 
     //if ( ((a.acceleration.z<=-5.0) || (a.acceleration.z>=11.0)) || ((timeSinceLastInterrupt<TIME_THRESHOLD_REP_MAX) && (timeSinceLastInterrupt> TIME_THRESHOLD_REP_MIN)) ) // NOTE: In final code, we need to use the x and y rather than z axis (or just the y axis)
 
-    if ( ((a.acceleration.z<=-5.0) || (a.acceleration.z>=11.0)) )// NOTE: In final code, we need to use the x and y rather than z axis (or just the y axis)
+    if ( ((a.acceleration.z<=-5.0) || (a.acceleration.z>=11.0)) || (slowRep >= 20) )// NOTE: In final code, we need to use the x and y rather than z axis (or just the y axis)
     //|| (slowRep >= 20))
     {
       motionDet++;
