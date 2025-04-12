@@ -38,7 +38,7 @@ void setup() {
   lcd.print("Rep Counter");
   lcd.setCursor(0, 1);
   lcd.print("Ready...");
-  delay(2000); // Show welcome message
+  delay(2000); // Show wselcome message
   lcd.clear();*/
 }
 
