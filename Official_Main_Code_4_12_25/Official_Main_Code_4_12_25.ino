@@ -83,7 +83,8 @@ void setup() {
    particleSensor.setPulseAmplitudeRed(0x0A); //Turn Red LED to low to indicate sensor is running
    particleSensor.setPulseAmplitudeGreen(0); //Turn off Green LED
 
-  
+  delay(100); //ADDING DELAYS TO DEBUG PWR ON/OFF STARTUP ISSUE
+
   //Accelorometer initialization code below
    while (!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
@@ -129,6 +130,9 @@ void setup() {
   lcd.print("# of reps:");    
   lcd.setCursor(12, 0);       
   lcd.print("Set:");
+
+  delay(100); //ADDING DELAYS TO DEBUG PWR ON/OFF STARTUP ISSUE
+
 }
 
 void loop() {
