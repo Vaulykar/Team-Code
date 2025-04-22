@@ -5,7 +5,7 @@
     Web: http://www.jarzebski.pl
     (c) 2014 by Korneliusz Jarzebski
 */
-
+/*
 #include <Wire.h>        // Library for I2C communication, used to talk to the MPU6050
 #include <MPU6050.h>     // Library for the MPU6050 sensor, simplifies interaction with it
 
@@ -160,3 +160,4 @@ void loop()
   Serial.print("\n");
   delay(50); // Small delay to slow down the loop for readability
 }
+*/
