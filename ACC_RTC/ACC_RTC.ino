@@ -118,7 +118,11 @@ void loop() {
   if (mpu.getMotionInterruptStatus()) {
     unsigned long timeSinceLastInterrupt = currentTime - lastInterruptTime;
 
-    if (((a.acceleration.z <= ACCEL_THRESHOLD_LOW || a.acceleration.z >= ACCEL_THRESHOLD_HIGH) &&
+    // Extra check to verify actual motion (debounce false positives)
+    mpu.getEvent(&a, &g, &temp);
+    float z = a.acceleration.z;
+
+    if (((z <= ACCEL_THRESHOLD_LOW || z >= ACCEL_THRESHOLD_HIGH) &&
          timeSinceLastInterrupt >= TIME_THRESHOLD_REP_MIN) && slowRep >= 20) {
       rep++;
       lastInterruptTime = currentTime;
