@@ -44,6 +44,8 @@ unsigned long lastInterruptTime = 0;
 // define a time threshold (in ms)
 const unsigned long TIME_THRESHOLD_REP_MIN = 1000; // 500 = 0.5
 const unsigned long TIME_THRESHOLD_SET = 15000; // The time before a set has ended (increase after testing is complete)
+const float ACCEL_THRESHOLD_LOW = -9.0;
+const float ACCEL_THRESHOLD_HIGH = 11.0;
 unsigned long currentTime;
 unsigned long timeSinceLastInterrupt;
 unsigned timeDel; // These definitions were added by MC so it would compile
