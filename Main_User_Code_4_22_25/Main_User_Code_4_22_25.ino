@@ -7,7 +7,7 @@
 *  Code up to date as of april 9th 1:03PM
 *  HeartRate Subsystem fully integrated. 
 *  Working on integrating Accelorometer power system and rtc simultaniously
-*  sir RITZ please chech lines 49, 50 & 51 once you are done updating the accelorometer code using the rtc
+*  sir RITZ please check lines 49, 50 & 51 once you are done updating the accelorometer code using the rtc
 *  
 *  Pin Assignments:
 *  User Interface: LCD: Digital Pin: 0-5
@@ -26,7 +26,7 @@
 
 Adafruit_MPU6050 mpu;
 MAX30105 particleSensor;
-//RTC_DS1307 rtc;
+RTC_DS1307 rtc;
 
 //Heartrate definitions below
 const byte RATE_SIZE = 4; //Increase this for more averaging. 4 is good.
@@ -42,7 +42,7 @@ int rep = 0, motionDet = 0, set = 0;
 // stores the time of the last interrupt
 unsigned long lastInterruptTime = 0;
 // define a time threshold (in ms)
-const unsigned long TIME_THRESHOLD_REP_MIN = 2000; // 500 = 0.5
+const unsigned long TIME_THRESHOLD_REP_MIN = 1000; // 500 = 0.5
 const unsigned long TIME_THRESHOLD_SET = 15000; // The time before a set has ended (increase after testing is complete)
 unsigned long currentTime;
 unsigned long timeSinceLastInterrupt;
@@ -61,16 +61,43 @@ const float referenceVoltage = 5.0;  // Arduino operating voltage
 unsigned long restStartTime = 0;
 bool isResting = false;
 const int REST_DURATION = 120; // 2 minutes in seconds
-bool movementDetected = false; // Placeholder for accelerometer input
-int setCounter = 0;            // Tracks completed sets
+//bool movementDetected = false; // Placeholder for accelerometer input
+//int setCounter = 0;            // Tracks completed sets
 
 //Display Definitions
 const int rs = 0, en = 1, d4 = 2, d5 = 3, d6 = 4, d7 = 5;    // initialize the library by associating any needed LCD interface pin
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);                   // with the arduino pin number it is connected to
 
+// Optional: Scan I2C devices
+void scanI2C() {
+  byte error, address;
+  int count = 0;
+
+  Serial.println("Scanning I2C devices...");
+  for (address = 1; address < 127; address++) {
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
+
+    if (error == 0) {
+      Serial.print("I2C device found at 0x");
+      if (address < 16) Serial.print("0");
+      Serial.println(address, HEX);
+      count++;
+    }
+  }
+  if (count == 0)
+    Serial.println("No I2C devices found.");
+  else
+    Serial.println("I2C scan complete.");
+}
+
 void setup() {
- //Serial.begin(9600);
-   
+ Serial.begin(9600);
+ Wire.begin();
+  delay(1000); // Ensure peripherals are ready, comment this out if takes too long
+  
+  scanI2C(); // Debugging: Confirm I2C devices
+
   //Initialize Heartrate sensor
     if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) //Use default I2C port, 400kHz speed
    {
@@ -83,16 +110,9 @@ void setup() {
    particleSensor.setPulseAmplitudeRed(0x0A); //Turn Red LED to low to indicate sensor is running
    particleSensor.setPulseAmplitudeGreen(0); //Turn off Green LED
 
-  
-  //Accelorometer initialization code below
-  //if (defined(SERIAL_PORT_USBVIRTUAL)){
-    // while (!Serial)
-    //delay(10); // will pause Zero, Leonardo, etc until serial console opens
-  //}
-
    //Serial.println("Adafruit MPU6050 test!");
 
-   // Try to initialize!
+   // Try to initialize Accelerometer
    if (!mpu.begin()) {
     //Serial.println("Failed to find MPU6050 chip");
     while (1) {
@@ -117,7 +137,7 @@ void setup() {
   pinMode(greenPin, OUTPUT);
   pinMode(bluePin, OUTPUT);
   // Initialize RTC 
-  /*
+  
    if (!rtc.begin()) {
     //Serial.println("RTC not found!");
     while (1);
@@ -125,7 +145,7 @@ void setup() {
    if (!rtc.isrunning()) {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Set RTC to compile time
    }
-*/
+
 //Setup LCD Display 
   lcd.begin(16, 2);            
   lcd.print("# of reps:");    
@@ -192,37 +212,82 @@ void loop() {
   }
   //Serial.println();
 
+// RTC Code below
+currentTime = millis();
+ DateTime now = rtc.now();
+ if (isResting) {
+    unsigned long elapsedTime = now.unixtime() - restStartTime;
+    if (elapsedTime < REST_DURATION) {
+      int remainingSeconds = REST_DURATION - elapsedTime;
+     // Serial.print("Resting | Set: ");
+     // Serial.print(set + 1);
+     // Serial.print(" | Time Left: ");
+     // Serial.print(remainingSeconds / 60);
+     // Serial.print(":");
+      if ((remainingSeconds % 60) < 10) Serial.print("0");
+      //Serial.println(remainingSeconds % 60);
+    } else {
+     // Serial.println("Rest done! Get back to work!");
+      isResting = false;
+      restStartTime = 0;
+      delay(2000);
+    }
+    delay(100);
+    return;
+  }
+
+ if (rep > 0 && (timeSinceLastInterrupt) >= TIME_THRESHOLD_SET) {
+    set++;
+    rep = 0;
+    isResting = true;
+    restStartTime = now.unixtime();
+    //Serial.print("New set started: ");
+    //Serial.println(set + 1);
+    return;
+  }
 
 //Accelorometer Code and output below
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
  // get current time
-   currentTime = millis();
+   
     // calculate time since last interrupt
-  if ((currentTime - lastInterruptTime) >= TIME_THRESHOLD_SET && rep != 0)
-    {
-      set++;
-      rep = 0;
-    }
+ if (rep > 0 && (currentTime - lastInterruptTime) >= TIME_THRESHOLD_SET) {
+    set++;
+    rep = 0;
+    isResting = true;
+    restStartTime = now.unixtime();
+    //Serial.print("New set started: ");
+    //Serial.println(set + 1);
+    return;
+  }
 
-  if(mpu.getMotionInterruptStatus()) {
-    //Get new sensor events with the readings
-    // Calculate time since last interrupt
-    timeDel = currentTime - lastTime;
-    lastTime = currentTime;
-    timeSinceLastInterrupt = currentTime - lastInterruptTime;
-    
-    // Condition: only proceed if enough time has passed since last interrupt
-   if ( (/*(a.acceleration.z<=-9.0) ||*/ (a.acceleration.z>=11.0))) // NOTE: In final code, we need to use the x and y rather than z axis (or just the y axis)
-     {
-       // Update the last interrupt time
-       motionDet++;
-       if (motionDet == 1)
-       { rep++;
-         motionDet = 0;
-       }
- 
-       lastInterruptTime = currentTime;
+  if (mpu.getMotionInterruptStatus()) {
+    unsigned long timeSinceLastInterrupt = currentTime - lastInterruptTime;
+
+    // Extra check to verify actual motion (debounce false positives)
+    mpu.getEvent(&a, &g, &temp);
+    float z = a.acceleration.z;
+
+    if (((z <= ACCEL_THRESHOLD_LOW || z >= ACCEL_THRESHOLD_HIGH) &&
+         timeSinceLastInterrupt >= TIME_THRESHOLD_REP_MIN) && slowRep >= 20) {
+      rep++;
+      lastInterruptTime = currentTime;
+      if (slowRep<20 && z > ACCEL_THRESHOLD_LOW && z < ACCEL_THRESHOLD_HIGH ) {
+        slowRep++;
+        lastInterruptTime = currentTime;
+
+        //Serial.print("Rep: ");
+        //Serial.print(rep);
+        //Serial.print(" | Set: ");
+        //Serial.println(set + 1);
+      }
+    }
+    else if { slowRep >= 20}
+    rep++;
+    slowRep = 0;
+    } 
+
      
      /* Get new sensor events with the readings */
      sensors_event_t a, g, temp;
