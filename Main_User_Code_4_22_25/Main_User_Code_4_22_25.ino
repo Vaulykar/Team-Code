@@ -285,7 +285,7 @@ currentTime = millis();
         //Serial.println(set + 1);
       }
     }
-    else if { slowRep >= 20}
+    else if ( slowRep >= 20)
     rep++;
     slowRep = 0;
     } 
@@ -348,7 +348,7 @@ currentTime = millis();
   if (rep < 10){
   lcd.setCursor(1, 1);
    lcd.print("  ");
-}
+  }
 
 //Power System Code below
   int rawValue = analogRead(batteryPin); // Read the analog input
