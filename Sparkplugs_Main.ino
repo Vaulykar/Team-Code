@@ -393,18 +393,18 @@ void loop() {
   // Update LCD with reps, apply -1 offset
   lcd.setCursor(0, 1);
   lcd.print(rep); // Apply -1 offset, ensure non-negative
-  if ((rep - 1) < 10) {
+  /*if ((rep - 1) < 10) {
     lcd.setCursor(1, 1);
-    lcd.print("  ");
+    lcd.print(" ");
   }
-
+*/
 // Power system code
   int rawValue = analogRead(batteryPin);
   float batteryVoltage = (rawValue / 1023.0) * referenceVoltage;
   if (batteryVoltage >= 4.0) {
     analogWrite(redPin, 0);
     analogWrite(greenPin, 255);
-  } else if (batteryVoltage > 3.0 && batteryVoltage < 4.0) {
+  } else if (batteryVoltage > 3.3 && batteryVoltage < 4.0) {
     analogWrite(redPin, 170);
     analogWrite(greenPin, 85);
   } else {
