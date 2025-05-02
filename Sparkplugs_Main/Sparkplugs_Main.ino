@@ -395,11 +395,28 @@ if(!isResting){
   
     } 
  ////////////HR   
-    else if(elapsedTime >= REST_DURATION) {
+    if(elapsedTime >= REST_DURATION) {
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Back to Work!");
       delay(5000);
+      isResting = false;
+      setCompleted = false;
+      rep = 0;
+      set++;
+      restStartTime = 0;
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("# of reps:");
+      lcd.setCursor(12, 0);
+      lcd.print("Set:");
+      lcd.setCursor(0, 1);
+      lcd.print("0"); // Reset to 0 after rest
+      lcd.setCursor(13, 1);
+      lcd.print(set + 1);
+    }
+
+    if(mpu.getMotionInterruptStatus()){
       isResting = false;
       setCompleted = false;
       rep = 0;
