@@ -347,7 +347,39 @@ void loop() {
       lcd.setCursor(0, 1);
       lcd.print("Set: ");
       lcd.print(set + 1);
-    } else {
+
+      ////////////HR
+      if (irValue < 50000) {
+    if (beatAvg > 0) {
+      lcd.setCursor(12, 0);
+      lcd.print("   ");
+      lcd.setCursor(13, 1);
+      lcd.print("   ");
+    }
+    beatAvg = 0;
+    /*
+    lcd.setCursor(12, 0);
+    lcd.print("Set:");
+    lcd.setCursor(13, 1);
+    lcd.print(set + 1);
+    */
+  }
+
+  if (irValue > 50000) {
+    lcd.setCursor(12, 0);
+    lcd.print(" HR:");
+    lcd.setCursor(13, 1);
+    lcd.print(beatAvg);
+  }
+  
+  if (beatAvg < 100) {
+    lcd.setCursor(15, 1);
+    lcd.print(" ");
+  }
+  
+    } 
+ ////////////HR   
+    else {
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Back to Work!");
