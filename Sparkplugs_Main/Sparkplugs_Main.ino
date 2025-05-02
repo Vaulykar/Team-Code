@@ -294,7 +294,7 @@ void loop() {
       beatAvg /= RATE_SIZE;
     }
   }
-
+if(!isResting){
   if (irValue < 50000) {
     if (beatAvg > 0) {
       lcd.setCursor(13, 1);
@@ -318,7 +318,7 @@ void loop() {
     lcd.setCursor(15, 1);
     lcd.print(" ");
   }
-
+}
 // Accelerometer and timing logic
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
@@ -349,6 +349,22 @@ void loop() {
       lcd.print(set + 1);
 
       ////////////HR
+      long irValue = particleSensor.getIR();
+      if (checkForBeat(irValue) == true) {
+        long delta = millis() - lastBeat;
+        lastBeat = millis();
+        beatsPerMinute = 60 / (delta / 1000.0);
+    
+        if (beatsPerMinute < 255 && beatsPerMinute > 20) {
+        rates[rateSpot++] = (byte)beatsPerMinute;
+        rateSpot %= RATE_SIZE;
+        beatAvg = 0;
+        for (byte x = 0; x < RATE_SIZE; x++)
+        beatAvg += rates[x];
+        beatAvg /= RATE_SIZE;
+        }
+      }
+
       if (irValue < 50000) {
     if (beatAvg > 0) {
       lcd.setCursor(12, 0);
@@ -366,8 +382,8 @@ void loop() {
   }
 
   if (irValue > 50000) {
-    lcd.setCursor(12, 0);
-    lcd.print(" HR:");
+    lcd.setCursor(10, 1);
+    lcd.print("HR:");
     lcd.setCursor(13, 1);
     lcd.print(beatAvg);
   }
@@ -379,7 +395,7 @@ void loop() {
   
     } 
  ////////////HR   
-    else {
+    else if(elapsedTime >= REST_DURATION) {
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Back to Work!");
@@ -399,7 +415,7 @@ void loop() {
       lcd.setCursor(13, 1);
       lcd.print(set + 1);
     }
-    delay(100);
+    delay(10);
     return;
   }
 
