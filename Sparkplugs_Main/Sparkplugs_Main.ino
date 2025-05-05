@@ -41,7 +41,7 @@ unsigned long lastInterruptTime = 0;
 const unsigned long TIME_THRESHOLD_REP_MIN = 600;
 const unsigned long TIME_THRESHOLD_SET = 20000;
 const float Y_ACCEL_THRESHOLD_LOW = -7.0;
-const float Y_ACCEL_THRESHOLD_HIGH = 9.0;
+const float Y_ACCEL_THRESHOLD_HIGH = 8.5;
 unsigned long currentTime;
 unsigned long timeSinceLastInterrupt;
 unsigned long timeDel = 0;
@@ -324,7 +324,7 @@ if(!isResting){
   mpu.getEvent(&a, &g, &temp);
   currentTime = millis();
 
-  // Check for 5-second inactivity to trigger rest only after a valid set
+  // Check for 15-second inactivity to trigger rest only after a valid set
   if (rep >= MIN_REPS_FOR_SET && (currentTime - lastInterruptTime) >= TIME_THRESHOLD_SET && !isResting) {
     setCompleted = true;
     isResting = true;
@@ -415,22 +415,25 @@ if(!isResting){
       lcd.setCursor(13, 1);
       lcd.print(set + 1);
     }
-
+        //Accelerometer incrementation during "Back to Work" logic
+    float y = a.acceleration.y;
     if(mpu.getMotionInterruptStatus()){
+      if(y<Y_ACCEL_THRESHOLD_HIGH)
+      {
       isResting = false;
       setCompleted = false;
       rep = 0;
       set++;
       restStartTime = 0;
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("# of reps:");
-      lcd.setCursor(12, 0);
-      lcd.print("Set:");
-      lcd.setCursor(0, 1);
-      lcd.print("0"); // Reset to 0 after rest
-      lcd.setCursor(13, 1);
-      lcd.print(set + 1);
+     // NEED TO ADD BACK TO WORK MESSAGE HERE
+      }
+      else {
+      isResting = false;
+      setCompleted = false;
+      rep++;
+      }
+
+
     }
     delay(10);
     return;
@@ -444,7 +447,7 @@ if(!isResting){
     float y = a.acceleration.y;
     Serial.print("Y-Value: ");
     Serial.println(y);
-    if ((y >= Y_ACCEL_THRESHOLD_HIGH &&
+    if ((y >= Y_ACCEL_THRESHOLD_HIGH) &&
         timeSinceLastInterrupt >= TIME_THRESHOLD_REP_MIN) {
       rep++;
       lastInterruptTime = currentTime;
