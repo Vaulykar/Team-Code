@@ -1,6 +1,5 @@
-/*  Team: The Sparkplugs
- *  Mitchell Chunn, Tyler Dunn, Joshua Lane, Jeremiah "Christian" Pope, Christopher Ritz
- *  
+/* 
+ *  Mitchell Chunn
  *  ECE 1013 - Rep_Tracker project
  *  User interface subsystem
  * 
@@ -42,7 +41,7 @@ unsigned long lastInterruptTime = 0;
 const unsigned long TIME_THRESHOLD_REP_MIN = 600;
 const unsigned long TIME_THRESHOLD_SET = 20000;
 const float Y_ACCEL_THRESHOLD_LOW = -7.0;
-const float Y_ACCEL_THRESHOLD_HIGH = 8.5;
+const float Y_ACCEL_THRESHOLD_HIGH = 8.0;
 unsigned long currentTime;
 unsigned long timeSinceLastInterrupt;
 unsigned long timeDel = 0;
@@ -68,129 +67,6 @@ const int rs = 0, en = 1, d4 = 2, d5 = 3, d6 = 4, d7 = 5;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 void setup() {
-/* SPARE CODE FOR REFERENCE
--------------------------------------------------------------------
-
-  Serial.begin(9600);
-  Wire.begin();
-  delay(1000);
-  
-  // Initialize LCD early
-  lcd.begin(16, 2);
-  lcd.print("Initializing...");
-  
-  //Scan I2C devices 
-  byte error, address;
-  int count = 0;
-
-  lcd.clear();
-  lcd.print("Scanning I2C...");
-  for (address = 1; address < 127; address++) {
-    Wire.beginTransmission(address);
-    error = Wire.endTransmission();
-
-    if (error == 0) {
-      lcd.clear();
-      lcd.print("Device at 0x");
-      if (address < 16) lcd.print("0");
-      lcd.print(address, HEX);
-      delay(1000);
-      count++;
-    }
-  }
-  lcd.clear();
-  if (count == 0)
-    lcd.print("No I2C devices");
-  else
-    lcd.print("I2C scan done");
-  delay(1000);
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("# of reps:");
-  lcd.setCursor(12, 0);
-  lcd.print("Set:");
-
-  //Initialize Heartrate sensor
-    if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) //Use default I2C port, 400kHz speed
-   {
-    while (!particleSensor.begin(Wire, I2C_SPEED_FAST)){
-    Serial.println("MAX30105 was not found. Please check wiring/power. ");
-    if (particleSensor.begin(Wire, I2C_SPEED_FAST)){
-    break;
-    }
-    }
-    
-   }
-   Serial.println("Place your index finger on the sensor with steady pressure.");
-
-   particleSensor.setup(); //Configure sensor with default settings
-   particleSensor.setPulseAmplitudeRed(0x0A); //Turn Red LED to low to indicate sensor is running
-   particleSensor.setPulseAmplitudeGreen(0); //Turn off Green LED
-
-  // Initialize accelerometer with reset
-  Wire.beginTransmission(0x68); // MPU6050 default address
-  Wire.write(0x6B); // Power management register
-  Wire.write(0x80); // Reset device
-  Wire.endTransmission(true);
-  delay(100); // Wait for reset
-
-  if (!mpu.begin()) {
-    lcd.clear();
-    lcd.print("MPU6050 fail");
-    while (1) {
-      delay(10);
-    }
-  }
-  mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
-  mpu.setMotionDetectionThreshold(2.5);
-  mpu.setMotionDetectionDuration(600);
-  mpu.setInterruptPinLatch(true);
-  mpu.setInterruptPinPolarity(true);
-  mpu.setMotionInterrupt(false); // Disable interrupts during stabilization
-  
-  // Extended stabilization
-  for (int i = 0; i < 10; i++) {
-    mpu.getMotionInterruptStatus();
-    delay(100);
-  }
-  delay(6000); // 6 seconds stabilization
-  mpu.setMotionInterrupt(true); // Enable interrupts after stabilization
-  isInitialized = true;
-
-  // Power system setup
-  pinMode(redPin, OUTPUT);
-  pinMode(greenPin, OUTPUT);
-  pinMode(bluePin, OUTPUT);
-
-  // Initialize RTC 
-  if (!rtc.begin()) {
-    lcd.clear();
-    lcd.print("RTC fail");
-    while (1);
-  }
-  /*
-  if (!rtc.isrunning()) {
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  }
-
-
-  // Setup LCD
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("# of reps:");
-  lcd.setCursor(12, 0);
-  lcd.print("Set:");
-  lcd.setCursor(0, 1);
-  //lcd.print(max(rep - 1, 0)); // Apply -1 offset, ensure non-negative
-  lcd.print(rep);
-  lcd.setCursor(13, 1);
-  lcd.print(set + 1);
-
-  // Debug: Confirm rep is 0
-  Serial.print("Initial rep count: ");
-  Serial.println(rep);
-  ---------------------------------------------------------------------------------
-  */
 
  Serial.begin(9600);
  delay(1000); // Ensure peripherals are ready
@@ -223,7 +99,7 @@ void setup() {
     }
   }
   mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
-  mpu.setMotionDetectionThreshold(2.5);
+  mpu.setMotionDetectionThreshold(2.0);
   mpu.setMotionDetectionDuration(600);
   mpu.setInterruptPinLatch(true);
   mpu.setInterruptPinPolarity(true);
@@ -352,7 +228,7 @@ if(!isResting){
       lcd.print("Set: ");
       lcd.print(set + 1);
 
-      ////////////HR DURING REST
+      ////////////HR
       long irValue = particleSensor.getIR();
       if (checkForBeat(irValue) == true) {
         long delta = millis() - lastBeat;
@@ -397,9 +273,8 @@ if(!isResting){
     lcd.print(" ");
   }
   
-     
- ////////////HR DURING REST
-
+    } 
+ ////////////HR   
     if(elapsedTime >= REST_DURATION) {
       lcd.clear();
       lcd.setCursor(0, 0);
@@ -420,48 +295,9 @@ if(!isResting){
       lcd.setCursor(13, 1);
       lcd.print(set + 1);
     }
-
-            //Accelerometer incrementation during "Back to Work" logic
-
-    /* CODE TO HANDLE MOVEMENT AND POSITIONING EARLIER THAN END OF REST TIME
-------------------------------------------------------------------------
-    if(mpu.getMotionInterruptStatus()){
-      if(y<Y_ACCEL_THRESHOLD_HIGH && y>= Y_ACCEL_THRESHOLD_HIGH && isResting)
-      {
-      isResting = false;
-      setCompleted = false;
-      rep = 0;
-      set++;
-      restStartTime = 0;
-       lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Back to Work!");
-      delay(5000);
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("# of reps:");
-      lcd.setCursor(12, 0);
-      lcd.print("Set:");
-      lcd.setCursor(0, 1);
-      lcd.print("0"); // Reset to 0 after rest
-      lcd.setCursor(13, 1);
-      lcd.print(set + 1);
-      }
-------------------------------------------------------------------------
-      */
-       if(mpu.getMotionInterruptStatus()){
-            float y = a.acceleration.y;
-      if (y>=Y_ACCEL_THRESHOLD_HIGH) {
-      isResting = false;
-      setCompleted = false;
-      rep++;
-      }
-      }
-
-
-    }
+    
     delay(10);
-    //return;
+    return;
   }
 
   // Accelerometer motion detection and rep incrementation logic
@@ -489,7 +325,7 @@ if(!isResting){
 
   // Update LCD with reps, apply -1 offset
   lcd.setCursor(0, 1);
-  lcd.print(rep); 
+  lcd.print(rep); // Apply -1 offset, ensure non-negative
   /*if ((rep - 1) < 10) {
     lcd.setCursor(1, 1);
     lcd.print(" ");
