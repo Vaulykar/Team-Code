@@ -449,17 +449,19 @@ if(!isResting){
       }
 ------------------------------------------------------------------------
       */
-
-      float y = a.acceleration.y;
-      if (y>=Y_ACCEL_THRESHOLD_HIGH && mpu.getMotionInterruptStatus()) {
+       if(mpu.getMotionInterruptStatus()){
+            float y = a.acceleration.y;
+      if (y>=Y_ACCEL_THRESHOLD_HIGH) {
       isResting = false;
       setCompleted = false;
       rep++;
       }
+      }
+
 
     }
     delay(10);
-    return;
+    //return;
   }
 
   // Accelerometer motion detection and rep incrementation logic
