@@ -1,373 +1,319 @@
 /* 
-*  Mitchell Chunn
-*  ECE 1013 - Rep_Tracker project
-*  User interface subsystem
-* 
-*  Project Notes: 
-*  Code up to date as of april 9th 1:03PM
-*  HeartRate Subsystem fully integrated. 
-*  Working on integrating Accelorometer power system and rtc simultaniously
-*  sir RITZ please chech lines 49, 50 & 51 once you are done updating the accelorometer code using the rtc
-*  
-*  Pin Assignments:
-*  User Interface: LCD: Digital Pin: 0-5
-*  Accelerometer: Digital Pins 8 + 9. Analog Pins: A4 + A5 
-*  Heartbeat Sensor: SDA + SSL
-*  RTC Clock Module: Analog Pins: A4 + A5
-*/
+ *  Team: The Sparkplugs
+ *  Mitchell Chunn, Tyler Dunn, Joshua Lane, Jeremiah "Christian" Pope, Christopher Ritz
+ *  ECE 1013 - Rep_Tracker project
+ *  User interface subsystem
+ *  
+ *  Pin Assignments:
+ *  User Interface: LCD: Digital Pins 0–5
+ *  Accelerometer: Digital Pin 8 (INT), Analog Pins A4 (SDA), A5 (SCL)
+ *  Heartbeat Sensor: A4 (SDA), A5 (SCL)
+ *  RTC Clock Module: A4 (SDA), A5 (SCL)
+ */
 
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 #include <LiquidCrystal.h>
-#include "MAX30105.h"
-#include "heartRate.h"
-#include <RTClib.h>           // DS1307 RTC library
+#include <MAX30105.h>
+#include <heartRate.h>
+#include <RTClib.h>
 
 Adafruit_MPU6050 mpu;
 MAX30105 particleSensor;
 RTC_DS1307 rtc;
 
-//Heartrate definitions below
-const byte RATE_SIZE = 4; //Increase this for more averaging. 4 is good.
-byte rates[RATE_SIZE]; //Array of heart rates
+// Sensor status
+bool mpuOK = false, hrOK = false, rtcOK = false;
+
+// Heart rate
+const byte RATE_SIZE = 4;
+byte rates[RATE_SIZE];
 byte rateSpot = 0;
-long lastBeat = 0; //Time at which the last beat occurred
-float beatsPerMinute; 
-int beatAvg;   
+long lastBeat = 0;
+float beatsPerMinute;
+int beatAvg;
 
-/*Accellorometer definitions below*/
-//used for set and rep incrementing logic
-int rep = 0, motionDet = 0, set = 0;
-// stores the time of the last interrupt
+// Accelerometer
+int rep = 0, set = 0;
 unsigned long lastInterruptTime = 0;
-// define a time threshold (in ms)
-const unsigned long TIME_THRESHOLD_REP_MIN = 2000; // 500 = 0.5
-const unsigned long TIME_THRESHOLD_SET = 15000; // The time before a set has ended (increase after testing is complete)
+const unsigned long TIME_THRESHOLD_REP_MIN = 600;
+const unsigned long TIME_THRESHOLD_SET = 20000;
+const float Y_ACCEL_THRESHOLD_LOW = -7.0;
+const float Y_ACCEL_THRESHOLD_HIGH = 8.5;
 unsigned long currentTime;
-unsigned long timeSinceLastInterrupt;
-unsigned timeDel; // These definitions were added by MC so it would compile
-unsigned lastTime;//
-unsigned slowRep; //
+bool isInitialized = false;
+const int MIN_REPS_FOR_SET = 3;
 
-//Power System definitions
-const int batteryPin = A0;  // Analog pin to read battery voltage
-const int redPin = 9;       // Red LED pin (PWM)
-const int greenPin = 10;    // Green LED pin (PWM)
-const int bluePin = 11;     // Blue LED pin (not used in this case)
-const float referenceVoltage = 5.0;  // Arduino operating voltage
+// Power system
+const int batteryPin = A0;
+const int redPin = 9;
+const int greenPin = 10;
+const int bluePin = 11;
+const float referenceVoltage = 5.0;
+float batteryVoltage = 0.0; // Global variable for battery voltage
 
-//RTC definitions
-unsigned long restStartTime = 0;
-bool isResting = false;
-const int REST_DURATION = 120; // 2 minutes in seconds
-bool movementDetected = false; // Placeholder for accelerometer input
-int setCounter = 0;            // Tracks completed sets
+// RTC and rest period
+unsigned long restStartTime = 0, backToWorkStart = 0;
+bool isResting = false, setCompleted = false;
+const unsigned long REST_DURATION = 120000;
+const unsigned long BACK_TO_WORK_DURATION = 5000;
 
-//Display Definitions
-const int rs = 0, en = 1, d4 = 2, d5 = 3, d6 = 4, d7 = 5;    // initialize the library by associating any needed LCD interface pin
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);                   // with the arduino pin number it is connected to
+// Display
+const int rs = 0, en = 1, d4 = 2, d5 = 3, d6 = 4, d7 = 5;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 void setup() {
- Serial.begin(9600);
-   
-  //Initialize Heartrate sensor
-    if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) //Use default I2C port, 400kHz speed
-   {
-    Serial.println("MAX30105 was not found. Please check wiring/power. ");
-    while (1);
-   }
-   Serial.println("Place your index finger on the sensor with steady pressure.");
+  Serial.begin(9600);
+  lcd.begin(16, 2);
+  lcd.print(F("Booting..."));
+  delay(1000);
+  Wire.begin();
 
-   particleSensor.setup(); //Configure sensor with default settings
-   particleSensor.setPulseAmplitudeRed(0x0A); //Turn Red LED to low to indicate sensor is running
-   particleSensor.setPulseAmplitudeGreen(0); //Turn off Green LED
-
-  
-  //Accelorometer initialization code below
-   while (!Serial)
-    delay(10); // will pause Zero, Leonardo, etc until serial console opens
-
-   Serial.println("Adafruit MPU6050 test!");
-
-   // Try to initialize!
-   if (!mpu.begin()) {
-    Serial.println("Failed to find MPU6050 chip");
-    while (1) {
-      delay(10);
+  // Heart rate
+  for (int i = 0; i < 3; i++) {
+    if (particleSensor.begin(Wire, I2C_SPEED_FAST)) {
+      hrOK = true;
+      break;
     }
-   }
-   Serial.println("MPU6050 Found!");
+    Serial.println(F("MAX30105 retry..."));
+    delay(500);
+  }
+  if (hrOK) {
+    particleSensor.setup();
+    particleSensor.setPulseAmplitudeRed(0x0A);
+    particleSensor.setPulseAmplitudeGreen(0);
+    Serial.println(F("Place finger on sensor"));
+  }
 
-   //setup motion detection
-   mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
-   mpu.setMotionDetectionThreshold(1);               // Change these valies for motion detection sensitivity
-   mpu.setMotionDetectionDuration(200);              //
-   mpu.setInterruptPinLatch(true);	// Keep it latched.  Will turn off when reinitialized.
-   mpu.setInterruptPinPolarity(true);
-   mpu.setMotionInterrupt(true);
+  // Accelerometer
+  Wire.beginTransmission(0x68);
+  Wire.write(0x6B);
+  Wire.write(0x80);
+  Wire.endTransmission(true);
+  delay(100);
+  if (mpu.begin(0x69)) {
+    mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
+    mpu.setMotionDetectionThreshold(2.5);
+    mpu.setMotionDetectionDuration(200);
+    mpu.setInterruptPinLatch(true);
+    mpu.setInterruptPinPolarity(true);
+    mpu.setMotionInterrupt(false);
+    for (int i = 0; i < 5; i++) {
+      mpu.getMotionInterruptStatus();
+      delay(100);
+    }
+    delay(1500);
+    mpu.setMotionInterrupt(true);
+    mpuOK = true;
+    isInitialized = true;
+  } else {
+    Serial.println(F("MPU6050 fail"));
+    lcd.clear();
+    lcd.print(F("MPU6050 fail"));
+  }
 
-   Serial.println("");
-   //delay(100);
+  // RTC
+  if (rtc.begin()) {
+    if (!rtc.isrunning()) {
+      rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+      Serial.println(F("RTC set"));
+    }
+    rtcOK = true;
+  } else {
+    Serial.println(F("RTC fail"));
+    lcd.clear();
+    lcd.print(F("RTC fail"));
+  }
 
-  //Power system setup
+  // Power system
   pinMode(redPin, OUTPUT);
   pinMode(greenPin, OUTPUT);
   pinMode(bluePin, OUTPUT);
-  // Initialize RTC 
 
-   if (!rtc.begin()) {
-    Serial.println("RTC not found!");
-    while (1);
-   }
-   if (!rtc.isrunning()) {
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Set RTC to compile time
-   }
-   
-  //Setup LCD Display 
-  lcd.begin(16, 2);            
-  lcd.print("# of reps:");    
-  lcd.setCursor(12, 0);       
-  lcd.print("Set:");
+  // LCD
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(F("# of reps:"));
+  lcd.setCursor(12, 0);
+  lcd.print(F("Set:"));
+  lcd.setCursor(0, 1);
+  lcd.print(rep);
+  lcd.setCursor(13, 1);
+  lcd.print(set + 1);
 }
 
-void loop() {
-//Heartrate code and output below
- long irValue = particleSensor.getIR();
-
-  if (checkForBeat(irValue) == true)
-  {
-    //We sensed a beat!
+void updateHeartRate() {
+  if (!hrOK) return;
+  long irValue = particleSensor.getIR();
+  if (checkForBeat(irValue)) {
     long delta = millis() - lastBeat;
     lastBeat = millis();
-
     beatsPerMinute = 60 / (delta / 1000.0);
-    
-    if (beatsPerMinute < 255 && beatsPerMinute > 20)
-    {
-      rates[rateSpot++] = (byte)beatsPerMinute; //Store this reading in the array
-      rateSpot %= RATE_SIZE; //Wrap variable
-
-      //Take average of readings
+    if (beatsPerMinute < 255 && beatsPerMinute > 20) {
+      rates[rateSpot++] = (byte)beatsPerMinute;
+      rateSpot %= RATE_SIZE;
       beatAvg = 0;
-      for (byte x = 0 ; x < RATE_SIZE ; x++)
-      beatAvg += rates[x];
+      for (byte x = 0; x < RATE_SIZE; x++) beatAvg += rates[x];
       beatAvg /= RATE_SIZE;
     }
   }
-
- 
-  Serial.print("IR=");        //all serial print code will be uneccesary for final code
-  Serial.print(irValue);
-  Serial.print(", BPM=");
-  Serial.print(beatsPerMinute);
-  Serial.print(", Avg BPM=");
-  Serial.print(beatAvg);
- 
-  if (irValue < 50000){         //if there is no finger on the sensor reset beatAvg to zero
-   if(beatAvg > 0){
-    lcd.setCursor(13, 1);
-    lcd.print("   ");
-   }
-    //Serial.print(" No finger?");
-    beatAvg = 0;
-    lcd.setCursor(12, 0);
-    lcd.print("Set:");
-    lcd.setCursor(13, 1);
-    lcd.print(set);
-  }
-
-  if (irValue > 50000){
-    lcd.setCursor(12, 0);
-    lcd.print(" HR:");
-    lcd.setCursor(13, 1);
+  static int lastBeatAvg = -1;
+  if (irValue < 50000) {
+    if (beatAvg > 0) {
+      lcd.setCursor(12, 0);
+      lcd.print(F("Set:"));
+      lcd.setCursor(13, 1);
+      lcd.print(set + 1);
+      beatAvg = 0;
+    }
+  } else if (beatAvg != lastBeatAvg) {
+    lcd.setCursor(10, isResting ? 1 : 0);
+    lcd.print(F("HR:"));
+    lcd.setCursor(13, isResting ? 1 : 1);
     lcd.print(beatAvg);
+    if (beatAvg < 100) lcd.print(F(" "));
+    lastBeatAvg = beatAvg;
   }
-    
-  if (beatAvg < 100){
-    lcd.setCursor(15, 1);
-    lcd.print(" ");
-  }
-  Serial.println();
+}
 
-/*
-//Accelorometer Code and output below
-  sensors_event_t a, g, temp;
-  mpu.getEvent(&a, &g, &temp);
-  // get current time
-   currentTime = millis();
-    // calculate time since last interrupt
-  if ((currentTime - lastInterruptTime) >= TIME_THRESHOLD_SET && rep != 0)
-    {
-      set++;
-      rep = 0;
-
-    //RTC Logic for message display INSERT HERE:
-
-    }
-
-  if(mpu.getMotionInterruptStatus()) {
-    //Get new sensor events with the readings
-    // Calculate time since last interrupt
-    timeDel = currentTime - lastTime;
-    lastTime = currentTime;
-
-    timeSinceLastInterrupt = currentTime - lastInterruptTime;
-
-    if(timeDel<TIME_THRESHOLD_REP_MIN){
-      slowRep++;
-    }
-    // Condition: only proceed if enough time has passed since last interrupt
-
-   if ( ((a.acceleration.z<=-5.0) || (a.acceleration.z>=11.0))) {// NOTE: In final code, we need to use the x and y rather than z axis (or just the y axis)//origionally 11.0
-    // Update the last interrupt time
-    motionDet++;
-    if (motionDet == 1){ 
+void updateAccelerometer(sensors_event_t &a) {
+  if (!mpuOK || !isInitialized) return;
+  if (mpu.getMotionInterruptStatus()) {
+    float y = a.acceleration.y;
+    if ((y >= Y_ACCEL_THRESHOLD_HIGH || y <= Y_ACCEL_THRESHOLD_LOW) &&
+        currentTime - lastInterruptTime >= TIME_THRESHOLD_REP_MIN) {
       rep++;
-      motionDet = 0;
-      slowRep = 0;
+      lastInterruptTime = currentTime;
+      lcd.setCursor(10, 1);
+      lcd.print(F("M"));
+      delay(100); // Consider removing for full non-blocking
+      lcd.setCursor(10, 1);
+      lcd.print(F(" "));
+      Serial.print(F("Rep: "));
+      Serial.println(rep);
     }
-  
-  lastInterruptTime = currentTime;
-
-  //Code inserted from RTC Lines 50-59:
-  
-  // Check if there's movement
-  if (movementDetected) {
-    // Movement detected, reset rest state
-    isResting = false;
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Working...");
-    lcd.setCursor(0, 1);
   }
+}
 
-  //if (a.acceleration.x>0 && a.acceleration.y>0 && a.acceleration.z>0){
-  //repCount ++;
-  //}
-  
-  
-    // Print out the values
-    Serial.print("AccelX:");
-    Serial.print(a.acceleration.x);
-    Serial.print(",");
-    Serial.print("AccelY:");
-    Serial.print(a.acceleration.y);
-    Serial.print(",");
-    Serial.print("AccelZ:");
-    Serial.print(a.acceleration.z);
-    Serial.print(", ");
-    Serial.print("GyroX:");
-    Serial.print(g.gyro.x);
-    Serial.print(",");
-    Serial.print("GyroY:");
-    Serial.print(g.gyro.y);
-    Serial.print(",");
-    Serial.print("GyroZ:");
-    Serial.print(g.gyro.z);
-    Serial.println("");
-
-    // motionDet ++;
-    //if (motionDet == 2){
-    //  rep ++;
-    //motionDet = 0;
-    //}
-    
-   
-
-    // only proceed if enough time has passed since last interrupt (FOR SETS COUNTED LOGIC)
-    //if (timeSinceLastInterrupt >= TIME_THRESHOLD_SET) {
-    // update the last interrupt time
-    //  lastInterruptTime = currentTime;
-    //}
-    
-    
-    Serial.print("Reps Performed: ");
-    Serial.print(rep);
-    Serial.println("");
-
-    Serial.print("Current Set: ");
-    Serial.print(set+1);
-    Serial.println("");
-
-    
+void updateRestPeriod(sensors_event_t &a) {
+  if (!isResting && rep >= MIN_REPS_FOR_SET && (currentTime - lastInterruptTime) >= TIME_THRESHOLD_SET) {
+    setCompleted = true;
+    isResting = true;
+    restStartTime = currentTime;
+    Serial.println(F("Rest started"));
   }
-  //Else logic from RTC Lines 61-101
-   else {
-    // No movement detected
-    if (!isResting) {
-      // Start rest timer
-      isResting = true;
-      DateTime now = rtc.now();
-      restStartTime = now.unixtime(); // Get current time in seconds
-    }
-
-    // Calculate elapsed rest time
-    DateTime now = rtc.now();
-    unsigned long elapsedTime = now.unixtime() - restStartTime;
-
-    if (isResting) {
-      if (elapsedTime < REST_DURATION) {
-        // Display countdown
-        int remainingSeconds = REST_DURATION - elapsedTime;
-        int minutes = remainingSeconds / 60;
-        int seconds = remainingSeconds % 60;
-
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Rest Time:");
-        lcd.setCursor(0, 1);
-        lcd.print(minutes);
-        lcd.print(":");
-        if (seconds < 10){
-         lcd.print("0"); // Add leading zero
+  if (isResting && setCompleted) {
+    unsigned long elapsedTime = currentTime - restStartTime;
+    if (elapsedTime < REST_DURATION && !mpu.getMotionInterruptStatus()) {
+      unsigned long remainingTime = (REST_DURATION - elapsedTime) / 1000;
+      int remainingSeconds = remainingTime;
+      lcd.setCursor(0, 0);
+      lcd.print(F("Rest "));
+      lcd.print(remainingSeconds / 60);
+      lcd.print(F(":"));
+      if ((remainingSeconds % 60) < 10) lcd.print(F("0"));
+      lcd.print(remainingSeconds % 60);
+      lcd.print(F("  "));
+      lcd.setCursor(0, 1);
+      lcd.print(F("S"));
+      if (set + 1 < 10) lcd.print(F("0"));
+      lcd.print(set + 1);
+      lcd.print(F(" V:"));
+      lcd.print(batteryVoltage, 1);
+    } else if (mpu.getMotionInterruptStatus()) {
+      float y = a.acceleration.y;
+      if ((y >= Y_ACCEL_THRESHOLD_HIGH || y <= Y_ACCEL_THRESHOLD_LOW) &&
+          currentTime - lastInterruptTime >= TIME_THRESHOLD_REP_MIN) {
+        rep++;
+        lastInterruptTime = currentTime;
+        static unsigned long motionStart = 0;
+        if (motionStart == 0) motionStart = currentTime;
+        if (currentTime - motionStart >= 2000) {
+          isResting = false;
+          setCompleted = false;
+          set++;
+          restStartTime = 0;
+          motionStart = 0;
+          lcd.clear();
+          lcd.setCursor(0, 0);
+          lcd.print(F("Back to Work!"));
+          backToWorkStart = currentTime;
         }
-        lcd.print(seconds);
-      } 
-      else {
-        // Rest time is up
+      }
+    } else if (elapsedTime >= REST_DURATION) {
+      if (backToWorkStart == 0) {
         lcd.clear();
         lcd.setCursor(0, 0);
-        lcd.print("Get back to");
+        lcd.print(F("Back to Work!"));
+        backToWorkStart = currentTime;
+      }
+      if (currentTime - backToWorkStart >= BACK_TO_WORK_DURATION) {
+        isResting = false;
+        setCompleted = false;
+        rep = 0;
+        set++;
+        restStartTime = 0;
+        backToWorkStart = 0;
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print(F("# of reps:"));
+        lcd.setCursor(12, 0);
+        lcd.print(F("Set:"));
         lcd.setCursor(0, 1);
-        lcd.print("work!");
-        delay(2000); // Show message for 2 seconds
-        
-        isResting = false; // Reset for next rest period
+        lcd.print(F("0"));
+        lcd.setCursor(13, 1);
+        lcd.print(set + 1);
       }
     }
   }
-  
-  //delay(10);
-}*/
-lcd.setCursor(0, 1);// set the cursor to column 0, line 1 (note: line 1 is the second row, since counting begins with 0):
-lcd.print(rep); 
-if (rep < 10){
-  lcd.setCursor(1, 1);
-  lcd.print("  ");
 }
-//Power System Code below
-  int rawValue = analogRead(batteryPin); // Read the analog input
-  float batteryVoltage = (rawValue / 1023.0) * referenceVoltage; // Convert to voltage
 
-  //Serial.print("Battery Voltage: ");
-  //Serial.println(batteryVoltage);
+void loop() {
+  currentTime = millis();
 
-  // Change LED color based on voltage level
+  // Power system
+  int rawValue = analogRead(batteryPin);
+  batteryVoltage = (rawValue / 1023.0) * referenceVoltage;
   if (batteryVoltage >= 4.0) {
-    analogWrite(redPin, 0);   // Red off
-    analogWrite(greenPin, 255); // Green on
-  }
-  else if (batteryVoltage > 3.0 && batteryVoltage < 4.0) {
-    analogWrite(redPin, 170);
-    analogWrite(greenPin, 85);
-  }
-  else {
-    analogWrite(redPin, 255);
+    analogWrite(redPin, 0);
+    analogWrite(greenPin, 128);
+  } else if (batteryVoltage > 3.3) {
+    analogWrite(redPin, 85);
+    analogWrite(greenPin, 42);
+  } else {
+    analogWrite(redPin, 128);
     analogWrite(greenPin, 0);
   }
-  analogWrite(bluePin, 0); // Blue remains off
+  analogWrite(bluePin, 0);
 
+  // Accelerometer data
+  sensors_event_t a, g, temp;
+  if (mpuOK) mpu.getEvent(&a, &g, &temp);
 
+  updateHeartRate();
+  updateAccelerometer(a);
+  updateRestPeriod(a);
 
+  // LCD updates
+  static int lastRep = -1, lastSet = -1;
+  if (rep != lastRep) {
+    lcd.setCursor(0, 1);
+    lcd.print(rep);
+    if (rep < 10) lcd.print(F(" "));
+    lastRep = rep;
+  }
+  if (set + 1 != lastSet) {
+    lcd.setCursor(13, 1);
+    lcd.print(set + 1);
+    lastSet = set + 1;
+  }
+
+  // Debug rest state
+  static bool wasResting = false;
+  if (isResting != wasResting) {
+    Serial.print(F("Rest state: "));
+    Serial.println(isResting ? F("ON") : F("OFF"));
+    wasResting = isResting;
+  }
 }
