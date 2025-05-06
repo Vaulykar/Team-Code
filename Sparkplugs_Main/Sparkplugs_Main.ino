@@ -59,7 +59,7 @@ const float referenceVoltage = 5.0;
 // RTC definitions
 unsigned long restStartTime = 0;
 bool isResting = false;
-const int REST_DURATION = 20000;
+const int REST_DURATION = 120000;
 bool setCompleted = false;
 
 // Display definitions
@@ -122,7 +122,7 @@ void setup() {
    //setup motion detection
    mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
    mpu.setMotionDetectionThreshold(1);               // Change these valies for motion detection sensitivity
-   mpu.setMotionDetectionDuration(400);              //
+   mpu.setMotionDetectionDuration(300);              //
    mpu.setInterruptPinLatch(true);	// Keep it latched.  Will turn off when reinitialized.
    mpu.setInterruptPinPolarity(true);
    mpu.setMotionInterrupt(false);
@@ -274,7 +274,7 @@ if(!isResting){
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Back to Work!");
-      delay(5000);
+      delay(1000);
       isResting = false;
       setCompleted = false;
       rep = 0;
