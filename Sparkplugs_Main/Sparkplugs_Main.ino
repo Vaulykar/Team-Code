@@ -59,7 +59,7 @@ const float referenceVoltage = 5.0;
 // RTC definitions
 unsigned long restStartTime = 0;
 bool isResting = false;
-const int REST_DURATION = 120000;
+const int REST_DURATION = 20000;
 bool setCompleted = false;
 
 // Display definitions
@@ -98,12 +98,6 @@ void setup() {
       delay(10);
     }
   }
-  mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
-  mpu.setMotionDetectionThreshold(2.0);
-  mpu.setMotionDetectionDuration(600);
-  mpu.setInterruptPinLatch(true);
-  mpu.setInterruptPinPolarity(true);
-  mpu.setMotionInterrupt(false); // Disable interrupts during stabilization
   
   // Extended stabilization
   for (int i = 0; i < 10; i++) {
@@ -131,7 +125,7 @@ void setup() {
    mpu.setMotionDetectionDuration(400);              //
    mpu.setInterruptPinLatch(true);	// Keep it latched.  Will turn off when reinitialized.
    mpu.setInterruptPinPolarity(true);
-   mpu.setMotionInterrupt(true);
+   mpu.setMotionInterrupt(false);
 
    //Serial.println("");
    delay(100);
@@ -275,7 +269,8 @@ if(!isResting){
   
     } 
  ////////////HR   
-    if(elapsedTime >= REST_DURATION) {
+    if(elapsedTime >= REST_DURATION || mpu.getMotionInterruptStatus()) {
+      if (a.acceleration.y < Y_ACCEL_THRESHOLD_HIGH){
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Back to Work!");
@@ -294,6 +289,25 @@ if(!isResting){
       lcd.print("0"); // Reset to 0 after rest
       lcd.setCursor(13, 1);
       lcd.print(set + 1);
+      }
+       if (a.acceleration.y >= Y_ACCEL_THRESHOLD_HIGH){
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      isResting = false;
+      setCompleted = false;
+      rep = 0;
+      set++;
+      restStartTime = 0;
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("# of reps:");
+      lcd.setCursor(12, 0);
+      lcd.print("Set:");
+      lcd.setCursor(0, 1);
+      lcd.print("0"); // Reset to 0 after rest
+      lcd.setCursor(13, 1);
+      lcd.print(set + 1);
+      }
     }
     
     delay(10);
