@@ -1,5 +1,6 @@
-/* 
- *  Mitchell Chunn
+/*  Team: The Sparkplugs
+ *  Mitchell Chunn, Tyler Dunn, Joshua Lane, Jeremiah "Christian" Pope, Christopher Ritz
+ *  
  *  ECE 1013 - Rep_Tracker project
  *  User interface subsystem
  * 
@@ -67,7 +68,9 @@ const int rs = 0, en = 1, d4 = 2, d5 = 3, d6 = 4, d7 = 5;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 void setup() {
-/*
+/* SPARE CODE FOR REFERENCE
+-------------------------------------------------------------------
+
   Serial.begin(9600);
   Wire.begin();
   delay(1000);
@@ -186,6 +189,7 @@ void setup() {
   // Debug: Confirm rep is 0
   Serial.print("Initial rep count: ");
   Serial.println(rep);
+  ---------------------------------------------------------------------------------
   */
 
  Serial.begin(9600);
@@ -348,7 +352,7 @@ if(!isResting){
       lcd.print("Set: ");
       lcd.print(set + 1);
 
-      ////////////HR
+      ////////////HR DURING REST
       long irValue = particleSensor.getIR();
       if (checkForBeat(irValue) == true) {
         long delta = millis() - lastBeat;
@@ -393,8 +397,9 @@ if(!isResting){
     lcd.print(" ");
   }
   
-    } 
- ////////////HR   
+     
+ ////////////HR DURING REST
+
     if(elapsedTime >= REST_DURATION) {
       lcd.clear();
       lcd.setCursor(0, 0);
@@ -415,24 +420,42 @@ if(!isResting){
       lcd.setCursor(13, 1);
       lcd.print(set + 1);
     }
-        //Accelerometer incrementation during "Back to Work" logic
-    float y = a.acceleration.y;
+
+            //Accelerometer incrementation during "Back to Work" logic
+
+    /* CODE TO HANDLE MOVEMENT AND POSITIONING EARLIER THAN END OF REST TIME
+------------------------------------------------------------------------
     if(mpu.getMotionInterruptStatus()){
-      if(y<Y_ACCEL_THRESHOLD_HIGH)
+      if(y<Y_ACCEL_THRESHOLD_HIGH && y>= Y_ACCEL_THRESHOLD_HIGH && isResting)
       {
       isResting = false;
       setCompleted = false;
       rep = 0;
       set++;
       restStartTime = 0;
-     // NEED TO ADD BACK TO WORK MESSAGE HERE
+       lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Back to Work!");
+      delay(5000);
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("# of reps:");
+      lcd.setCursor(12, 0);
+      lcd.print("Set:");
+      lcd.setCursor(0, 1);
+      lcd.print("0"); // Reset to 0 after rest
+      lcd.setCursor(13, 1);
+      lcd.print(set + 1);
       }
-      else {
+------------------------------------------------------------------------
+      */
+
+      float y = a.acceleration.y;
+      if (y>=Y_ACCEL_THRESHOLD_HIGH && mpu.getMotionInterruptStatus()) {
       isResting = false;
       setCompleted = false;
       rep++;
       }
-
 
     }
     delay(10);
@@ -464,7 +487,7 @@ if(!isResting){
 
   // Update LCD with reps, apply -1 offset
   lcd.setCursor(0, 1);
-  lcd.print(rep); // Apply -1 offset, ensure non-negative
+  lcd.print(rep); 
   /*if ((rep - 1) < 10) {
     lcd.setCursor(1, 1);
     lcd.print(" ");
