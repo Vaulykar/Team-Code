@@ -38,10 +38,10 @@ int beatAvg;
 // Accelerometer definitions
 int rep = 0, motionDet = 0, set = 0;
 unsigned long lastInterruptTime = 0;
-const unsigned long TIME_THRESHOLD_REP_MIN = 800;
-const unsigned long TIME_THRESHOLD_SET = 20000;
+const unsigned long TIME_THRESHOLD_REP_MIN = 500;
+const unsigned long TIME_THRESHOLD_SET = 5000;
 const float Y_ACCEL_THRESHOLD_LOW = -7.0;
-const float Y_ACCEL_THRESHOLD_HIGH = 9.0;
+const float Y_ACCEL_THRESHOLD_HIGH = 8.5;
 unsigned long currentTime;
 unsigned long timeSinceLastInterrupt;
 unsigned long timeDel = 0;
@@ -68,17 +68,17 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 void setup() {
 
- //Serial.begin(9600);
+ Serial.begin(9600);
  delay(1000); // Ensure peripherals are ready
  //scanI2C(); // Debugging: Confirm I2C devices  
 
   //Initialize Heartrate sensor
     if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) //Use default I2C port, 400kHz speed
    {
-    //Serial.println("MAX30105 was not found. Please check wiring/power. ");
-    while (1);
+    Serial.println("MAX30105 was not found. Please check wiring/power. ");
+    //while (1);
    }
-   //Serial.println("Place your index finger on the sensor with steady pressure.");
+   Serial.println("Place your index finger on the sensor with steady pressure.");
 
    particleSensor.setup(); //Configure sensor with default settings
    particleSensor.setPulseAmplitudeRed(0x0A); //Turn Red LED to low to indicate sensor is running
@@ -93,10 +93,10 @@ void setup() {
   delay(100); // Wait for reset
 
   if (!mpu.begin()) {
-    //Serial.print("MPU6050 fail");
-    while (1) {
+    Serial.print("MPU6050 fail");
+    //while (1) {
       delay(10);
-    }
+      //}
   }
   
   // Extended stabilization
@@ -109,20 +109,20 @@ void setup() {
 
 // Initialize RTC
   if (!rtc.begin()) {
-    //Serial.println("Couldn't find RTC. Check wiring.");
-    while (1);
+    Serial.println("Couldn't find RTC. Check wiring.");
+    //while (1);
   }
   if (!rtc.isrunning()) {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Set compile time
-    //Serial.println("RTC was not running. Time set.");
+    Serial.println("RTC was not running. Time set.");
   } else {
     Serial.println("RTC initialized.");
   }
 
    //setup motion detection
    mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
-   mpu.setMotionDetectionThreshold(1);               // Change these valies for motion detection sensitivity
-   mpu.setMotionDetectionDuration(500);              //
+   mpu.setMotionDetectionThreshold(2.0);               // Change these valies for motion detection sensitivity
+   mpu.setMotionDetectionDuration(700);              //
    mpu.setInterruptPinLatch(true);	// Keep it latched.  Will turn off when reinitialized.
    mpu.setInterruptPinPolarity(true);
    mpu.setMotionInterrupt(false);
@@ -138,7 +138,7 @@ void setup() {
   // Initialize RTC 
    if (!rtc.begin()) {
     //Serial.println("RTC not found!");
-    while (1);
+    //while (1);
    }
    if (!rtc.isrunning()) {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Set RTC to compile time
@@ -320,8 +320,8 @@ if(!isResting){
   if (isInitialized && mpu.getMotionInterruptStatus()) {
     timeSinceLastInterrupt = currentTime - lastInterruptTime;
     float y = a.acceleration.y;
-    //Serial.print("Y-Value: ");
-    //Serial.println(y);
+    Serial.print("Y-Value: ");
+    Serial.println(y);
     if ((y >= Y_ACCEL_THRESHOLD_HIGH) &&
         timeSinceLastInterrupt >= TIME_THRESHOLD_REP_MIN) {
       rep++;
@@ -332,8 +332,8 @@ if(!isResting){
       lcd.setCursor(10, 1);
       lcd.print(" ");
       // Debug: Log rep increment
-      //Serial.print("Rep incremented to: ");
-      //Serial.println(rep);
+      Serial.print("Rep incremented to: ");
+      Serial.println(rep);
     }
   }
 
