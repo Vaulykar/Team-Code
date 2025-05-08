@@ -38,10 +38,10 @@ int beatAvg;
 // Accelerometer definitions
 int rep = 0, motionDet = 0, set = 0;
 unsigned long lastInterruptTime = 0;
-const unsigned long TIME_THRESHOLD_REP_MIN = 700;
+const unsigned long TIME_THRESHOLD_REP_MIN = 800;
 const unsigned long TIME_THRESHOLD_SET = 10000;
 const float Y_ACCEL_THRESHOLD_LOW = -7.0;
-const float Y_ACCEL_THRESHOLD_HIGH = 8.2;
+const float Y_ACCEL_THRESHOLD_HIGH = 8.8;
 unsigned long currentTime;
 unsigned long timeSinceLastInterrupt;
 unsigned long timeDel = 0;
