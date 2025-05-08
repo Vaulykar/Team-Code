@@ -38,10 +38,10 @@ int beatAvg;
 // Accelerometer definitions
 int rep = 0, motionDet = 0, set = 0;
 unsigned long lastInterruptTime = 0;
-const unsigned long TIME_THRESHOLD_REP_MIN = 500;
-const unsigned long TIME_THRESHOLD_SET = 5000;
+const unsigned long TIME_THRESHOLD_REP_MIN = 700;
+const unsigned long TIME_THRESHOLD_SET = 10000;
 const float Y_ACCEL_THRESHOLD_LOW = -7.0;
-const float Y_ACCEL_THRESHOLD_HIGH = 8.5;
+const float Y_ACCEL_THRESHOLD_HIGH = 8.2;
 unsigned long currentTime;
 unsigned long timeSinceLastInterrupt;
 unsigned long timeDel = 0;
@@ -121,7 +121,7 @@ void setup() {
 
    //setup motion detection
    mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
-   mpu.setMotionDetectionThreshold(2.0);               // Change these valies for motion detection sensitivity
+   mpu.setMotionDetectionThreshold(1.9);               // Change these valies for motion detection sensitivity
    mpu.setMotionDetectionDuration(700);              //
    mpu.setInterruptPinLatch(true);	// Keep it latched.  Will turn off when reinitialized.
    mpu.setInterruptPinPolarity(true);
